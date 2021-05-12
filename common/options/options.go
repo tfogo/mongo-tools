@@ -117,6 +117,8 @@ type General struct {
 	MaxProcs   int    `long:"numThreads" hidden:"true"`
 	Failpoints string `long:"failpoints" hidden:"true"`
 	Trace      bool   `long:"trace" hidden:"true"`
+	CPUProfile string `long:"cpuprofile" hidden:"true"`
+	MemProfile string `long:"memprofile" hidden:"true"`
 }
 
 // Struct holding verbosity-related options

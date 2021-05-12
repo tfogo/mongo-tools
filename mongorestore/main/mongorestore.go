@@ -8,6 +8,9 @@
 package main
 
 import (
+	"runtime"
+	"runtime/pprof"
+
 	"github.com/mongodb/mongo-tools/common/log"
 	"github.com/mongodb/mongo-tools/common/signals"
 	"github.com/mongodb/mongo-tools/common/util"
@@ -39,6 +42,20 @@ func main() {
 		return
 	}
 
+	if opts.CPUProfile != "" {
+		f, err := os.Create(opts.CPUProfile)
+		if err != nil {
+			log.Logvf(log.Always, "could not create CPU profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
+		defer f.Close() // error handling omitted for example
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Logvf(log.Always, "could not start CPU profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
 	restore, err := mongorestore.New(opts)
 	if err != nil {
 		log.Logvf(log.Always, err.Error())
@@ -58,6 +75,20 @@ func main() {
 		log.Logvf(log.Always, "%v document(s) restored successfully. %v document(s) failed to restore.", result.Successes, result.Failures)
 	} else {
 		log.Logvf(log.Always, "done")
+	}
+
+	if opts.MemProfile != "" {
+		f, err := os.Create(opts.MemProfile)
+		if err != nil {
+			log.Logvf(log.Always, "could not create memory profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
+		defer f.Close() // error handling omitted for example
+		runtime.GC()    // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Logvf(log.Always, "could not write memory profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
 	}
 
 	if result.Err != nil {

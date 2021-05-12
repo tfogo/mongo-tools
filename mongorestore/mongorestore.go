@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -646,5 +648,20 @@ func (restore *MongoRestore) getArchiveReader() (rc io.ReadCloser, err error) {
 }
 
 func (restore *MongoRestore) HandleInterrupt() {
+
+	if restore.ToolOptions.MemProfile != "" {
+		f, err := os.Create(restore.ToolOptions.MemProfile)
+		if err != nil {
+			log.Logvf(log.Always, "could not create memory profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
+		defer f.Close() // error handling omitted for example
+		runtime.GC()    // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Logvf(log.Always, "could not write memory profile: ", err)
+			os.Exit(util.ExitFailure)
+		}
+	}
+
 	restore.terminate = true
 }
